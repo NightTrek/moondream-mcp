@@ -11,7 +11,12 @@ class McpTestClient {
   constructor(serverPath) {
     this.messageId = 1;
     this.serverProcess = spawn("node", [serverPath], {
-      stdio: ["pipe", "pipe", process.stderr]
+      stdio: ["pipe", "pipe", process.stderr],
+      env: {
+        ...process.env,
+        TMPDIR: '/tmp', // Ensure we use /tmp for venv
+        PATH: `${process.env.PATH}:/usr/local/bin:/usr/bin` // Ensure UV is in path
+      }
     });
 
     this.serverProcess.on("error", (error) => {
@@ -21,6 +26,9 @@ class McpTestClient {
     this.serverProcess.on("close", (code) => {
       console.log(`Server process exited with code ${code}`);
     });
+
+    // Give the server some time to start up
+    console.log("Waiting for server to start...");
   }
 
   async sendRequest(method, params = {}) {
@@ -36,7 +44,7 @@ class McpTestClient {
   }
 
   async runTests() {
-    const testTimeout = 30000; // 30 seconds timeout (increased for model loading)
+    const testTimeout = 120000; // 2 minutes timeout for initial setup and model loading
     let responsesReceived = 0;
     const expectedResponses = 4; // We're sending 4 requests
 
@@ -96,7 +104,7 @@ class McpTestClient {
         this.sendRequest("tools/call", {
           name: "analyze_image",
           arguments: {
-            image_path: join(__dirname, "testPhotoNighttrek.JPEG"),
+            image_path: join(__dirname, "testPhoto.JPEG"),
             prompt: "generate caption"
           }
         });
@@ -106,7 +114,7 @@ class McpTestClient {
         this.sendRequest("tools/call", {
           name: "analyze_image",
           arguments: {
-            image_path: join(__dirname, "testPhotoNighttrek.JPEG"),
+            image_path: join(__dirname, "testPhoto.JPEG"),
             prompt: "What time of day is it in this image?"
           }
         });

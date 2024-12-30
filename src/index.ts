@@ -17,6 +17,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { join } from "path";
 import * as fs from "fs/promises";
+import { PythonSetup } from "./utils/python-setup.js";
 
 interface ListToolsRequest extends Request {
   method: "tools/list";
@@ -32,8 +33,10 @@ interface CallToolRequest extends Request {
 
 class MoondreamServer {
   private server: Server;
+  private pythonSetup: PythonSetup;
 
   constructor() {
+    this.pythonSetup = new PythonSetup();
     this.server = new Server(
       {
         name: "moondream-server",
@@ -223,9 +226,28 @@ class MoondreamServer {
   }
 
   async run() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error("Moondream MCP server running on stdio");
+    try {
+      await this.pythonSetup.setup();
+      const transport = new StdioServerTransport();
+      await this.server.connect(transport);
+      console.error("Moondream MCP server running on stdio");
+
+      // Handle cleanup on exit
+      process.on('SIGINT', async () => {
+        this.pythonSetup.cleanup();
+        await this.server.close();
+        process.exit(0);
+      });
+      
+      process.on('SIGTERM', async () => {
+        this.pythonSetup.cleanup();
+        await this.server.close();
+        process.exit(0);
+      });
+    } catch (error) {
+      console.error("Failed to start server:", error);
+      process.exit(1);
+    }
   }
 }
 
