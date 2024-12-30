@@ -1,145 +1,183 @@
-# Moondream MCP Server
+# 🌙 Moondream MCP Server
 
-An MCP (Model Context Protocol) server that provides image analysis capabilities using the Moondream model. This server acts as a bridge between MCP clients and the Moondream model server, enabling image analysis through a standardized protocol.
+A powerful Model Context Protocol (MCP) server that brings advanced image analysis capabilities to your applications using the Moondream vision model. This server seamlessly integrates with Claude and Cline, providing a bridge between AI assistants and sophisticated computer vision tasks.
 
-## Features
+![Moondream Banner](https://raw.githubusercontent.com/vikhyat/moondream/main/assets/banner.png)
 
-- Image captioning
-- Object detection
-- Visual question answering
-- Automatic model downloading and management
-- Standardized MCP interface for tool usage
+## ✨ Features
 
-## Prerequisites
+- 🖼️ **Image Captioning**: Generate natural language descriptions of images
+- 🔍 **Object Detection**: Identify and locate specific objects within images
+- 💭 **Visual Question Answering**: Ask questions about image content and receive intelligent responses
+- 🚀 **High Performance**: Uses quantized 8-bit models for efficient inference
+- 🔄 **Automatic Setup**: Handles model downloading and environment setup
+- 🛠️ **MCP Integration**: Standardized protocol for seamless tool usage
 
-- Node.js (v18 or higher)
-- Python 3.8+ with pip
-- Virtual environment for Python dependencies
+## 🎯 Use Cases
 
-## Installation
+- **Content Analysis**: Automatically generate descriptions for image content
+- **Accessibility**: Create alt text for visually impaired users
+- **Data Extraction**: Extract specific information from images through targeted questions
+- **Object Verification**: Confirm the presence of specific objects in images
+- **Scene Understanding**: Analyze complex scenes and their components
 
-1. Clone the repository:
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js v18 or higher
+- Python 3.8+
+- UV package manager (automatically installed if not present)
+
+### Installation
+
+1. **Clone and Setup**
 ```bash
 git clone <repository-url>
 cd moondream-server
+pnpm install
 ```
 
-2. Install Node.js dependencies:
+2. **Build the Server**
 ```bash
-npm install
+pnpm run build
 ```
 
-3. Set up Python virtual environment and install Moondream:
-```bash
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install moondream
-```
+The server handles the rest automatically:
+- Creates Python virtual environment
+- Installs UV if not present
+- Downloads and sets up the Moondream model
+- Manages the model server process
 
-4. Build the TypeScript code:
-```bash
-npm run build
-```
+### Integration with Claude/Cline
 
-## How It Works
+Add to your MCP settings file (`claude_desktop_config.json` or `cline_mcp_settings.json`):
 
-The server operates in two parts:
-
-1. **MCP Server**: Handles MCP protocol communication and provides the `analyze_image` tool interface.
-2. **Moondream Model Server**: A Python server that runs the actual Moondream model for image analysis.
-
-When a request is made:
-1. The MCP server receives the request through stdio
-2. If not already running, it starts the Moondream model server
-3. It converts the image to base64 and forwards the request to the model server
-4. The response is formatted and returned through the MCP protocol
-
-## Usage
-
-### Starting the Server
-
-```bash
-node build/index.js
-```
-
-### Testing with the Test Client
-
-A test client is provided to verify server functionality:
-
-```bash
-node test-mcp-client.js
-```
-
-### Available Tools
-
-#### analyze_image
-
-Analyzes images using the Moondream model.
-
-Parameters:
-- `image_path`: Path to the image file to analyze
-- `prompt`: Command to analyze the image. Supports:
-  - `"generate caption"` for image captioning
-  - `"detect: [object]"` for object detection
-  - Any question for visual question answering
-
-Example usage through MCP:
-```javascript
+```json
 {
-  "jsonrpc": "2.0",
-  "method": "call_tool",
-  "params": {
-    "name": "analyze_image",
-    "arguments": {
-      "image_path": "/path/to/image.jpg",
-      "prompt": "generate caption"
+  "mcpServers": {
+    "moondream": {
+      "command": "node",
+      "args": ["/path/to/moondream-server/build/index.js"]
     }
   }
 }
 ```
 
-## Model Information
+## 🛠️ Available Tools
 
-The server uses the Moondream model, specifically the quantized 8-bit version for efficient inference. The model is automatically downloaded on first use from Hugging Face.
+### analyze_image
 
-Supported model variants:
-- `moondream-0_5b-int8.mf.gz` (default)
-- `moondream-2b-int8.mf.gz` (optional)
+Powerful image analysis tool with multiple modes:
 
-## Development
-
-### Project Structure
-
-```
-moondream-server/
-├── src/
-│   └── index.ts         # Main MCP server implementation
-├── build/               # Compiled JavaScript
-├── models/             # Downloaded model files
-├── test-mcp-client.js  # Test client for server verification
-└── .venv/              # Python virtual environment
+```typescript
+{
+  "name": "analyze_image",
+  "arguments": {
+    "image_path": string,  // Path to image file
+    "prompt": string       // Analysis command
+  }
+}
 ```
 
-### Building
+**Prompt Types:**
+- `"generate caption"` - Creates natural language description
+- `"detect: [object]"` - Finds specific objects (e.g., "detect: car")
+- `"[question]"` - Answers questions about the image
 
-```bash
-npm run build
+**Examples:**
+
+```javascript
+// Image Captioning
+{
+  "image_path": "photo.jpg",
+  "prompt": "generate caption"
+}
+
+// Object Detection
+{
+  "image_path": "scene.jpg",
+  "prompt": "detect: person"
+}
+
+// Visual Q&A
+{
+  "image_path": "painting.jpg",
+  "prompt": "What colors are used in this painting?"
+}
 ```
 
-This compiles the TypeScript code and makes the output executable.
+## 🔧 Technical Details
 
-## Troubleshooting
+### Architecture
 
-1. **Model Server Not Starting**
-   - Verify Python virtual environment is activated
-   - Check Python dependencies are installed
-   - Ensure model file exists in models directory
+The server operates as a dual-component system:
 
-2. **Communication Errors**
-   - Verify the server is running
-   - Check the test client is using correct method names
-   - Ensure image paths are absolute or relative to working directory
+1. **MCP Interface Layer**
+   - Handles protocol communication
+   - Manages tool interfaces
+   - Processes requests/responses
 
-## License
+2. **Moondream Model Server**
+   - Runs the vision model
+   - Processes image analysis
+   - Provides HTTP API endpoints
+
+### Model Information
+
+Uses the Moondream quantized model:
+- Default: `moondream-0_5b-int8.mf.gz`
+- Efficient 8-bit quantization
+- Automatic download from Hugging Face
+- ~500MB model size
+
+### Performance
+
+- Fast startup with automatic caching
+- Efficient memory usage through quantization
+- Responsive API endpoints
+- Concurrent request handling
+
+## 🔍 Debugging
+
+Common issues and solutions:
+
+1. **Model Download Issues**
+   ```bash
+   # Manual model download
+   wget https://huggingface.co/vikhyatk/moondream2/resolve/main/moondream-0_5b-int8.mf.gz
+   ```
+
+2. **Server Port Conflicts**
+   - Default port: 3475
+   - Check for process using: `lsof -i :3475`
+
+3. **Python Environment**
+   - UV manages dependencies
+   - Check logs in temp directory
+   - Virtual env in system temp folder
+
+## 🤝 Contributing
+
+Contributions welcome! Areas of interest:
+
+- Additional model support
+- Performance optimizations
+- New analysis capabilities
+- Documentation improvements
+
+## 📄 License
 
 [Add your license information here]
+
+## 🙏 Acknowledgments
+
+- [Moondream Model Team](https://github.com/vikhyat/moondream)
+- Model Context Protocol (MCP) Community
+- Contributors and maintainers
+
+---
+
+<p align="center">
+Made with ❤️ by the Moondream MCP Server Team
+</p>
