@@ -2,7 +2,8 @@
 
 A powerful Model Context Protocol (MCP) server that brings advanced image analysis capabilities to your applications using the Moondream vision model. This server seamlessly integrates with Claude and Cline, providing a bridge between AI assistants and sophisticated computer vision tasks.
 
-![Moondream Banner](https://raw.githubusercontent.com/vikhyat/moondream/main/assets/banner.png)
+![moondream-MCP-banner](https://github.com/user-attachments/assets/e999ada0-9dfa-4f3d-a489-e4ce58434ecb)
+
 
 ## ✨ Features
 
