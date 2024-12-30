@@ -1,0 +1,6 @@
+node_modules/
+build/
+*.log
+.venv
+models/**/* 
+testPhoto.JPEG
