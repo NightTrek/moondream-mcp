@@ -5,7 +5,9 @@ const model = new vl({ apiUrl: "http://127.0.0.1:3475", timeout: 300000 });  // 
 
 async function main() {
     try {
-        const encodedImage = Buffer.from(await fs.readFile("./testPhotoNighttrek.JPEG"))  // Load and encode image
+        const imagePath = "./testPhoto.JPEG";
+        console.log(`Reading image from ${imagePath}...`);
+        const encodedImage = Buffer.from(await fs.readFile(imagePath));  // Load and encode image
 
         // 1. Caption the image
         console.log("\nGenerating caption...")
