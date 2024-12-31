@@ -98,7 +98,7 @@ export class PythonSetup {
       console.log(`Current working directory: ${process.cwd()}`);
       console.log(`Attempting to access models at: ${join(process.cwd(), this.modelPath)}`);
       
-      const modelFile = join(this.modelPath, 'moondream-0_5b-int8.mf.gz');
+      const modelFile = join(this.modelPath, 'moondream-0_5b-int4.mf.gz');
       
       // First check if model file exists
       try {
@@ -130,7 +130,7 @@ export class PythonSetup {
       
       console.log('Downloading model file...');
       await execAsync(
-        `wget https://huggingface.co/vikhyatk/moondream2/resolve/9dddae84d54db4ac56fe37817aeaeb502ed083e2/moondream-0_5b-int8.mf.gz -P "${this.modelPath}"`
+        `wget https://huggingface.co/vikhyatk/moondream2/resolve/9dddae84d54db4ac56fe37817aeaeb502ed083e2/moondream-0_5b-int4.mf.gz -P "${this.modelPath}"`
       );
     } catch (error) {
       const { stdout: pwd } = await execAsync('pwd');
@@ -139,7 +139,7 @@ export class PythonSetup {
   }
 
   async startMoondreamServer(): Promise<void> {
-    const modelFile = 'moondream-0_5b-int8.mf.gz';
+    const modelFile = 'moondream-0_5b-int4.mf.gz';
     const moondreamBin = process.platform === 'win32' 
       ? join(this.venvPath, 'Scripts', 'moondream.exe')
       : join(this.venvPath, 'bin', 'moondream');

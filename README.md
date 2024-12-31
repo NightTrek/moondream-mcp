@@ -131,7 +131,7 @@ The server operates as a dual-component system:
 ### Model Information
 
 Uses the Moondream quantized model:
-- Default: `moondream-0_5b-int8.mf.gz`
+- Default: `moondream-0_5b-int4.mf.gz`
 - Efficient 8-bit quantization
 - Automatic download from Hugging Face
 - ~500MB model size
@@ -150,7 +150,7 @@ Common issues and solutions:
 1. **Model Download Issues**
    ```bash
    # Manual model download
-   wget https://huggingface.co/vikhyatk/moondream2/resolve/main/moondream-0_5b-int8.mf.gz
+   wget https://huggingface.co/vikhyatk/moondream2/resolve/main/moondream-0_5b-int4.mf.gz
    ```
 
 2. **Server Port Conflicts**

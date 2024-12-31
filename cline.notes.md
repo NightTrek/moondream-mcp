@@ -93,7 +93,7 @@ Configuration in `~/Library/Application Support/Code/User/globalStorage/saoudriz
    - Moondream server process management
 
 ### Model Details
-- Name: moondream-0_5b-int8.mf.gz
+- Name: moondream-0_5b-int4.mf.gz
 - Size: ~500MB
 - Type: 8-bit quantized
 - Source: Hugging Face
