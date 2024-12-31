@@ -184,5 +184,5 @@ Contributions welcome! Areas of interest:
 ---
 
 <p align="center">
-Made with ❤️ by the Moondream MCP Server Team
+Made with ❤️ by Nighttrek
 </p>
