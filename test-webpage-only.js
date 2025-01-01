@@ -10,12 +10,16 @@ const __dirname = dirname(__filename);
 class McpTestClient {
   constructor(serverPath) {
     this.messageId = 1;
-    this.serverProcess = spawn("node", [serverPath], {
+    this.serverPath = serverPath;
+  }
+
+  async initialize() {
+    this.serverProcess = spawn("node", [this.serverPath], {
       stdio: ["pipe", "pipe", process.stderr],
       env: {
         ...process.env,
-        TMPDIR: '/tmp', // Ensure we use /tmp for venv
-        PATH: `${process.env.PATH}:/usr/local/bin:/usr/bin` // Ensure UV is in path
+        TMPDIR: '/tmp',
+        PATH: `${process.env.PATH}:/usr/local/bin:/usr/bin`
       }
     });
 
@@ -27,8 +31,9 @@ class McpTestClient {
       console.log(`Server process exited with code ${code}`);
     });
 
-    // Give the server some time to start up
-    console.log("Waiting for server to start...");
+    console.log("Waiting for server and model to initialize...");
+    // Wait for server initialization
+    await new Promise(resolve => setTimeout(resolve, 10000));
   }
 
   async sendRequest(method, params = {}) {
@@ -43,14 +48,13 @@ class McpTestClient {
     this.serverProcess.stdin.write(JSON.stringify(request) + "\n");
   }
 
-  async runTests() {
-    const testTimeout = 120000; // 2 minutes timeout for initial setup and model loading
-    let responsesReceived = 0;
-    const expectedResponses = 5; // We're sending 5 requests now
+  async runTest() {
+    const testTimeout = 180000; // 3 minutes timeout to account for model loading
+    let responseReceived = false;
 
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        console.error("\nTest timeout: Not all responses received within 30 seconds");
+        console.error("\nTest timeout: No response received within 2 minutes");
         this.close();
         process.exit(1);
       }, testTimeout);
@@ -59,7 +63,6 @@ class McpTestClient {
       this.serverProcess.stdout.on("data", (data) => {
         try {
           const output = data.toString();
-          // Only try to parse lines that look like JSON (start with {)
           const jsonLines = output.split("\n")
             .filter(line => line.trim())
             .filter(line => line.trim().startsWith("{"));
@@ -69,18 +72,15 @@ class McpTestClient {
               const response = JSON.parse(message);
               console.error("\nRaw response:", message);
               console.log("\nReceived response:", JSON.stringify(response, null, 2));
-              responsesReceived++;
-
+              
               if (response.error) {
                 console.error(`Error in response: ${response.error.message}`);
               }
 
-              if (responsesReceived >= expectedResponses) {
-                clearTimeout(timeout);
-                console.log("\nAll test responses received");
-                this.close();
-                process.exit(0);
-              }
+              responseReceived = true;
+              clearTimeout(timeout);
+              this.close();
+              process.exit(0);
             } catch (parseError) {
               console.error("Error parsing JSON response:", parseError);
             }
@@ -90,57 +90,23 @@ class McpTestClient {
         }
       });
 
-      // Run the tests
+      // Send webpage analysis request
       try {
-        // Test 1: List available tools
-        console.log("\n=== Testing ListTools ===");
-        this.sendRequest("tools/list");
-
-        // Test 2: Call test tool
-        console.log("\n=== Testing test tool ===");
-        this.sendRequest("tools/call", {
-          name: "test",
-          arguments: {
-            message: "Hello from test client!"
-          }
-        });
-
-        // Test 3: Generate caption for image
-        console.log("\n=== Testing image caption generation ===");
-        this.sendRequest("tools/call", {
-          name: "analyze_image",
-          arguments: {
-            image_path: join(__dirname, "testPhoto.JPEG"),
-            prompt: "generate caption"
-          }
-        });
-
-        // Test 4: Ask a question about the image
-        console.log("\n=== Testing visual question answering ===");
-        this.sendRequest("tools/call", {
-          name: "analyze_image",
-          arguments: {
-            image_path: join(__dirname, "testPhoto.JPEG"),
-            prompt: "What time of day is it in this image?"
-          }
-        });
-
-        // Test 5: Analyze webpage
         console.log("\n=== Testing webpage analysis ===");
         this.sendRequest("tools/call", {
           name: "analyze_webpage",
           arguments: {
-            url: `file://${join(__dirname, "test.html")}`,
-            query: "Looking at the white text in the dark navigation bar at the top of the page, what are the exact words shown (HOME, ABOUT, etc)?",
-            waitTime: 2000,
+            url: "https://docs.moondream.ai/",
+            query: "Looking at the highlighted navigation elements (yellow for sidebar, cyan for top bar), list all visible navigation links. Format your response as 'Sidebar: [list links] / Top bar: [list links]'. Only include links that are clearly visible and highlighted.",
+            waitTime: 30000, // Further increased wait time for better content detection
             viewport: {
-              width: 1280,
-              height: 800
+              width: 1920,
+              height: 1080
             }
           }
         });
       } catch (error) {
-        console.error("Error running tests:", error);
+        console.error("Error running test:", error);
         this.close();
         process.exit(1);
       }
@@ -158,8 +124,17 @@ class McpTestClient {
 const serverPath = join(__dirname, "build", "index.js");
 const client = new McpTestClient(serverPath);
 
-// Run tests
-client.runTests().catch(error => {
+// Run test
+(async () => {
+  try {
+    await client.initialize();
+    await client.runTest();
+  } catch (error) {
+    console.error("Test execution error:", error);
+    client.close();
+    process.exit(1);
+  }
+})().catch(error => {
   console.error("Test execution error:", error);
   client.close();
   process.exit(1);

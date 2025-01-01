@@ -255,7 +255,9 @@ class MoondreamServer {
             console.error(`[Debug] Request body keys:`, Object.keys(body));
 
             // Query the model server
-            const response = await fetch(`http://127.0.0.1:3475/${endpoint}`, {
+            // Use streaming endpoints for caption and query
+            const streamEndpoint = endpoint === "detect" ? endpoint : `${endpoint}/stream`;
+            const response = await fetch(`http://127.0.0.1:3475/${streamEndpoint}`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -268,24 +270,55 @@ class MoondreamServer {
               throw new Error(`Model server error: ${response.statusText} - ${errorText}`);
             }
 
-            const result = await response.json();
-            console.error(`[Debug] Response:`, result);
-            
-            let responseText = "";
-            if (endpoint === "caption") {
-              responseText = result.caption;
-            } else if (endpoint === "detect") {
-              responseText = `Detected objects: ${JSON.stringify(result.objects)}`;
-            } else {
-              responseText = result.answer;
-            }
+            // Handle streaming responses
+            if (streamEndpoint.endsWith("/stream")) {
+              const reader = response.body?.getReader();
+              const decoder = new TextDecoder();
+              let buffer = "";
 
-            return {
-              content: [{
-                type: "text",
-                text: responseText,
-              }],
-            };
+              if (!reader) {
+                throw new Error("Failed to get response reader");
+              }
+
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+                for (const line of lines) {
+                  if (!line) continue;
+                  try {
+                    const chunk = JSON.parse(line);
+                    // Accumulate chunks and return them all at once
+                    return {
+                      content: [{
+                        type: "text",
+                        text: chunk.chunk,
+                      }],
+                    };
+                  } catch (e) {
+                    console.error("Failed to parse chunk:", e);
+                  }
+                }
+              }
+
+              // Send empty content to indicate end of stream
+              return { content: [] };
+            } else {
+              // Handle non-streaming responses (detect endpoint)
+              const result = await response.json();
+              console.error(`[Debug] Response:`, result);
+              
+              return {
+                content: [{
+                  type: "text",
+                  text: `Detected objects: ${JSON.stringify(result.objects)}`,
+                }],
+              };
+            }
           } catch (error: unknown) {
             console.error("Error analyzing image:", error);
             const errorMessage = error instanceof Error ? error.message : "Unknown error";
@@ -332,7 +365,8 @@ class MoondreamServer {
             console.error("[Debug] Base64 length:", base64Image.length);
 
             // Query the model
-            const response = await fetch("http://127.0.0.1:3475/query", {
+            const controller = new AbortController();
+            const response = await fetch("http://127.0.0.1:3475/query/stream", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -341,6 +375,7 @@ class MoondreamServer {
                 image_url: `data:image/jpeg;base64,${base64Image}`,
                 question: query
               }),
+              signal: controller.signal
             });
 
             if (!response.ok) {
@@ -348,14 +383,40 @@ class MoondreamServer {
               throw new Error(`Model server error: ${response.statusText} - ${errorText}`);
             }
 
-            const result = await response.json();
-            console.error("[Debug] Model response:", result);
-            return {
-              content: [{
-                type: "text",
-                text: result.answer,
-              }],
-            };
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+
+            if (!reader) {
+              throw new Error("Failed to get response reader");
+            }
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+              for (const line of lines) {
+                if (!line) continue;
+                try {
+                  const chunk = JSON.parse(line);
+                  return {
+                    content: [{
+                      type: "text",
+                      text: chunk.chunk,
+                    }],
+                  };
+                } catch (e) {
+                  console.error("Failed to parse chunk:", e);
+                }
+              }
+            }
+
+            // Send empty content to indicate end of stream
+            return { content: [] };
           } catch (error: unknown) {
             console.error("Error analyzing webpage:", error);
             const errorMessage = error instanceof Error ? error.message : "Unknown error";

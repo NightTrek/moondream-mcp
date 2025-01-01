@@ -57,14 +57,10 @@ export class PuppeteerSetup {
     };
   }
 
-  async captureScreenshot(
-    url: string,
-    waitTime: number = DEFAULT_WAIT_TIME,
-    viewport?: ViewportConfig
-  ): Promise<string> {
+  async captureScreenshot(url: string, waitTime: number = DEFAULT_WAIT_TIME, viewport?: ViewportConfig): Promise<string> {
     const browser = await this.ensureBrowser();
     const page = await browser.newPage();
-
+    
     try {
       const validViewport = this.validateViewport(viewport);
       await page.setViewport(validViewport);
@@ -219,7 +215,7 @@ export class PuppeteerSetup {
       if (stats.size === 0) {
         throw new Error('Screenshot file is empty');
       }
-    }
+
       return screenshotPath;
     } finally {
       await page.close();

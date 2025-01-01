@@ -4,3 +4,4 @@ build/
 .venv
 models/**/* 
 testPhoto.JPEG
+screenshots/**/*

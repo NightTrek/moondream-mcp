@@ -11,10 +11,13 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.6.0",
-    "moondream": "^0.0.5"
+    "moondream": "^0.0.5",
+    "puppeteer": "^23.11.1",
+    "tmp": "^0.2.3"
   },
   "devDependencies": {
     "@types/node": "^20.17.10",
+    "@types/tmp": "^0.2.6",
     "typescript": "^5.7.2"
   }
 }
