@@ -219,8 +219,9 @@ export class PuppeteerSetup {
       if (stats.size === 0) {
         throw new Error('Screenshot file is empty');
       }
-    }
       return screenshotPath;
+    } catch (error) {
+      throw error;
     } finally {
       await page.close();
     }

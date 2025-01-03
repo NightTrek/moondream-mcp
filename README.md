@@ -131,7 +131,7 @@ The server operates as a dual-component system:
 ### Model Information
 
 Uses the Moondream quantized model:
-- Default: `moondream-0_5b-int4.mf.gz`
+- Default: `moondream-2b-int8.mf.gz`
 - Efficient 8-bit quantization
 - Automatic download from Hugging Face
 - ~500MB model size
