@@ -1,5 +1,7 @@
 # 🌙 Moondream MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@NightTrek/moondream-mcp)](https://smithery.ai/server/@NightTrek/moondream-mcp)
+
 A powerful Model Context Protocol (MCP) server that brings advanced image analysis capabilities to your applications using the Moondream vision model. This server seamlessly integrates with Claude and Cline, providing a bridge between AI assistants and sophisticated computer vision tasks.
 
 This IS NOT an offical Moondream package. All credit to [moondream.ai](https://github.com/vikhyat/moondream) for making the best open source vision model that you can run on consumer hardware.
@@ -33,6 +35,14 @@ This IS NOT an offical Moondream package. All credit to [moondream.ai](https://g
 - Node.js v18 or higher
 - Python 3.8+
 - UV package manager (automatically installed if not present)
+
+### Installing via Smithery
+
+To install Moondream for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@NightTrek/moondream-mcp):
+
+```bash
+npx -y @smithery/cli install @NightTrek/moondream-mcp --client claude
+```
 
 ### Installation
 
