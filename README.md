@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/nighttrek-moondream-mcp-badge.png)](https://mseep.ai/app/nighttrek-moondream-mcp)
+
 # 🌙 Moondream MCP Server
 
 A powerful Model Context Protocol (MCP) server that brings advanced image analysis capabilities to your applications using the Moondream vision model. This server seamlessly integrates with Claude and Cline, providing a bridge between AI assistants and sophisticated computer vision tasks.
