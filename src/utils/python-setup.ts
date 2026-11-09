@@ -12,10 +12,13 @@ export class PythonSetup {
   async setup(): Promise<void> {
     if (process.env.MOONDREAM_EXTERNAL_SERVER === '1') return;
     if (!this.pending) {
-      this.pending = this.start().catch(error => {
-        this.cleanup();
+      const pending = this.start().catch(error => {
+        // A child exit can allow a retry before this attempt finishes polling.
+        // Never let an old attempt cancel or kill the current replacement.
+        if (this.pending === pending) this.cleanup();
         throw error;
       });
+      this.pending = pending;
     }
     return this.pending;
   }

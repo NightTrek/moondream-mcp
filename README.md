@@ -48,6 +48,13 @@ npm ci --ignore-scripts
 npm run build
 ```
 
+3. **Start the Server**
+```bash
+npm start
+```
+
+This is a stdio MCP server, not a web UI: it waits for JSON-RPC on stdin. Connect it through the Claude/Cline configuration below, or run `npm test` for an automated initialize/list-tools/test-tool handshake. Diagnostics are printed only to stderr. Always rebuild from TypeScript before starting; do not copy TypeScript source into `build/`.
+
 The MCP handshake and `test` tool work without Python, a browser, or model weights.
 Analysis starts the backend lazily. Setup never executes a downloaded installer, invokes a shell, or downloads model files.
 
