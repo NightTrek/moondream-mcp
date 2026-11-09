@@ -15,7 +15,6 @@ import {
   ListToolsRequestSchema,
   Request,
 } from "@modelcontextprotocol/sdk/types.js";
-import { join } from "path";
 import * as fs from "fs/promises";
 import { PythonSetup } from "./utils/python-setup.js";
 import { PuppeteerSetup, ViewportConfig } from "./utils/puppeteer-setup.js";
@@ -47,73 +46,7 @@ class MoondreamServer {
       },
       {
         capabilities: {
-          tools: {
-            test: {
-              description: "Test tool to verify server functionality",
-              inputSchema: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                    description: "Test message to echo back"
-                  }
-                },
-                required: ["message"]
-              }
-            },
-            analyze_image: {
-              description: "Analyze an image using the Moondream model",
-              inputSchema: {
-                type: "object",
-                properties: {
-                  image_path: {
-                    type: "string",
-                    description: "Path to the image file to analyze"
-                  },
-                  prompt: {
-                    type: "string",
-                    description: "Command to analyze the image. Use 'generate caption' for image captioning, 'detect: [object]' for object detection, or any question for image querying."
-                  }
-                },
-                required: ["image_path", "prompt"]
-              }
-            },
-            analyze_webpage: {
-              description: "Take a screenshot of a webpage and analyze it using Moondream",
-              inputSchema: {
-                type: "object",
-                properties: {
-                  url: {
-                    type: "string",
-                    description: "URL to screenshot (defaults to http://localhost:3000)"
-                  },
-                  query: {
-                    type: "string",
-                    description: "Question to ask about the webpage"
-                  },
-                  waitTime: {
-                    type: "number",
-                    description: "Time to wait after page load in milliseconds (default: 15000)"
-                  },
-                  viewport: {
-                    type: "object",
-                    description: "Optional viewport settings",
-                    properties: {
-                      width: {
-                        type: "number",
-                        description: "Viewport width (default: 1280, max: 2560)"
-                      },
-                      height: {
-                        type: "number",
-                        description: "Viewport height (default: 720, max: 1440)"
-                      }
-                    }
-                  }
-                },
-                required: ["query"]
-              }
-            }
-          },
+          tools: {},
         },
       }
     );
@@ -223,6 +156,7 @@ class MoondreamServer {
           }
 
           try {
+            await this.pythonSetup.setup();
             // Verify image exists
             await fs.access(imagePath);
 
@@ -269,8 +203,8 @@ class MoondreamServer {
             }
 
             const result = await response.json();
-            console.error(`[Debug] Response:`, result);
             
+
             let responseText = "";
             if (endpoint === "caption") {
               responseText = result.caption;
@@ -304,6 +238,7 @@ class MoondreamServer {
           }
 
           try {
+            await this.pythonSetup.setup();
             console.error("[Debug] Analyzing webpage:", url);
             console.error("[Debug] Query:", query);
             
@@ -349,7 +284,7 @@ class MoondreamServer {
             }
 
             const result = await response.json();
-            console.error("[Debug] Model response:", result);
+
             return {
               content: [{
                 type: "text",
@@ -377,10 +312,14 @@ class MoondreamServer {
 
   async run() {
     try {
-      await this.pythonSetup.setup();
       const transport = new StdioServerTransport();
       await this.server.connect(transport);
       console.error("Moondream MCP server running on stdio");
+
+      process.stdin.once("end", async () => {
+        await this.cleanup();
+        await this.server.close();
+      });
 
       // Handle cleanup on exit
       process.on('SIGINT', async () => {

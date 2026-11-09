@@ -15,7 +15,7 @@ This IS NOT an offical Moondream package. All credit to [moondream.ai](https://g
 - 🔍 **Object Detection**: Identify and locate specific objects within images
 - 💭 **Visual Question Answering**: Ask questions about image content and receive intelligent responses
 - 🚀 **High Performance**: Uses quantized 8-bit models for efficient inference
-- 🔄 **Automatic Setup**: Handles model downloading and environment setup
+- 🔄 **Explicit Setup**: No software installers or model downloads during MCP sessions
 - 🛠️ **MCP Integration**: Standardized protocol for seamless tool usage
 
 ## 🎯 Use Cases
@@ -30,29 +30,58 @@ This IS NOT an offical Moondream package. All credit to [moondream.ai](https://g
 
 ### Prerequisites
 
-- Node.js v18 or higher
+- Node.js v22.12.0 or higher
 - Python 3.8+
-- UV package manager (automatically installed if not present)
+- UV package manager, installed separately from https://docs.astral.sh/uv/
 
 ### Installation
 
 1. **Clone and Setup**
 ```bash
-git clone <repository-url>
-cd moondream-server
-pnpm install
+git clone https://github.com/NightTrek/moondream-mcp.git
+cd moondream-mcp
+npm ci --ignore-scripts
 ```
 
 2. **Build the Server**
 ```bash
-pnpm run build
+npm run build
 ```
 
-The server handles the rest automatically:
-- Creates Python virtual environment
-- Installs UV if not present
-- Downloads and sets up the Moondream model
-- Manages the model server process
+The MCP handshake and `test` tool work without Python, a browser, or model weights.
+Analysis starts the backend lazily. Setup never executes a downloaded installer, invokes a shell, or downloads model files.
+
+### Backend setup (explicit, one-time)
+
+Install UV separately using its official instructions. Then, on macOS/Linux:
+
+```bash
+mkdir -p "$HOME/.local/share/moondream-mcp/models"
+uv venv "$HOME/.local/share/moondream-mcp/venv"
+uv pip install --python "$HOME/.local/share/moondream-mcp/venv/bin/python" moondream
+curl --fail --location --output "$HOME/.local/share/moondream-mcp/models/moondream-0_5b-int4.mf.gz" \
+  https://huggingface.co/vikhyatk/moondream2/resolve/9dddae84d54db4ac56fe37817aeaeb502ed083e2/moondream-0_5b-int4.mf.gz
+```
+
+Set `MOONDREAM_EXECUTABLE` and `MOONDREAM_MODEL_PATH` in your MCP client's environment to override these paths (required for other layouts, including Windows). Paths are passed as literal arguments, never shell commands. Alternatively, start a compatible Moondream server yourself on `127.0.0.1:3475` and set `MOONDREAM_EXTERNAL_SERVER=1`. Only use a backend you trust; image content is sent to that local service.
+
+For `analyze_webpage`, explicitly install Puppeteer's Chrome browser after dependency installation:
+
+```bash
+npx puppeteer browsers install chrome
+```
+
+Browser sandbox and web security remain enabled. Use a host with Chrome sandbox support; do not disable it to work around container restrictions. Screenshots use private temporary directories and are removed on normal shutdown. Only analyze trusted URLs and files; localhost access is intentionally supported.
+
+### Verification
+
+```bash
+npm ci --ignore-scripts
+npm test
+npm audit --omit=dev --audit-level=high
+```
+
+These checks do not install Python/Chrome or download/run model weights. Actual inference and browser capture require the explicit setup above.
 
 ### Integration with Claude/Cline
 
@@ -131,9 +160,9 @@ The server operates as a dual-component system:
 ### Model Information
 
 Uses the Moondream quantized model:
-- Default: `moondream-2b-int8.mf.gz`
-- Efficient 8-bit quantization
-- Automatic download from Hugging Face
+- Default: `moondream-0_5b-int4.mf.gz`
+- Efficient 4-bit quantization
+- Explicit download from a pinned Hugging Face revision
 - ~500MB model size
 
 ### Performance
@@ -159,8 +188,8 @@ Common issues and solutions:
 
 3. **Python Environment**
    - UV manages dependencies
-   - Check logs in temp directory
-   - Virtual env in system temp folder
+   - Diagnostics go to stderr, never the MCP stdout channel
+   - Virtual env in `$HOME/.local/share/moondream-mcp/venv`
 
 ## 🤝 Contributing
 
