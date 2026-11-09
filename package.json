@@ -8,14 +8,18 @@
   "scripts": {
     "build": "tsc && chmod +x build/index.js",
     "start": "node build/index.js",
-    "dev": "tsc -w"
+    "dev": "tsc -w",
+    "test": "npm run build && node --test tests/*.test.mjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.6.0",
-    "moondream": "^0.0.5"
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "puppeteer": "^25.16.0"
   },
   "devDependencies": {
     "@types/node": "^20.17.10",
     "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }

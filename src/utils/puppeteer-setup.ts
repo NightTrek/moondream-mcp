@@ -1,12 +1,7 @@
-import puppeteer, { Browser, Page, Viewport } from 'puppeteer';
-import * as tmp from 'tmp';
-import { promisify } from 'util';
-import { promises as fs } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-// Make tmp.file return a promise
-const tmpFile = promisify(tmp.file);
+import puppeteer, { Browser, Viewport } from 'puppeteer';
+import { promises as fs } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 // Configuration
 const MAX_VIEWPORT_WIDTH = 2560;  // 2K resolution max width
@@ -23,22 +18,14 @@ export interface ViewportConfig extends Viewport {
 }
 
 export class PuppeteerSetup {
+  private screenshotDirs = new Set<string>();
   private browser: Browser | null = null;
 
   async ensureBrowser(): Promise<Browser> {
     if (!this.browser) {
       this.browser = await puppeteer.launch({
         headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--disable-gpu',
-          '--window-size=1920,1080',
-          '--disable-web-security',
-          '--enable-features=NetworkService'
-        ]
+
       });
     }
     return this.browser;
@@ -183,14 +170,7 @@ export class PuppeteerSetup {
         overlay.style.boxShadow = '0 4px 6px rgba(0,0,0,0.3)';
 
         const visibleNavItems = navItems.filter(item => item.visible);
-        overlay.innerHTML = `
-          <div style="margin-bottom: 10px; color: #58a6ff; font-size: 18px">Navigation Menu Items:</div>
-          ${visibleNavItems.map((item, index) => `
-            <div style="margin-bottom: 5px; padding: 4px 8px; background: rgba(255,255,255,0.1); border-radius: 4px;">
-              ${index + 1}. ${item.text}
-            </div>
-          `).join('')}
-        `;
+        overlay.textContent = 'Navigation Menu Items: ' + visibleNavItems.map((item, index) => `${index + 1}. ${item.text}`).join('; ');
 
         document.body.appendChild(overlay);
         return navItems;
@@ -199,9 +179,8 @@ export class PuppeteerSetup {
       console.error('[Debug] Navigation items found:', pageInfo);
 
       // Take screenshot and store in screenshots directory
-      const projectRoot = '/Users/danielsteigman/code/MCP/moondream-server';
-      const screenshotsDir = join(projectRoot, 'screenshots');
-      await fs.mkdir(screenshotsDir, { recursive: true });
+      const screenshotsDir = await fs.mkdtemp(join(tmpdir(), 'moondream-screenshot-'));
+      this.screenshotDirs.add(screenshotsDir);
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const screenshotPath = join(screenshotsDir, `screenshot-${timestamp}.jpg`);
@@ -228,6 +207,8 @@ export class PuppeteerSetup {
   }
 
   async cleanup(): Promise<void> {
+    await Promise.all([...this.screenshotDirs].map(dir => fs.rm(dir, { recursive: true, force: true })));
+    this.screenshotDirs.clear();
     if (this.browser) {
       await this.browser.close();
       this.browser = null;
